@@ -25,7 +25,7 @@ public class Task extends Observable implements Observer
 	private List<Task> parents;
 	
 	//
-	// Contructors
+	// Constructors
 	//
 
 	public Task(String name, String description,
@@ -94,11 +94,30 @@ public class Task extends Observable implements Observer
 		return name;
 	}
 	
+	public void setName(String name)
+	{
+		this.name = name;
+	}
+	
 	public String getDescription()
 	{
 		return description;
 	}
 	
+	public void setDescription(String description)
+	{
+		this.description = description;
+	}
+	
+	//
+	// Duration
+	//
+	
+	public void setDuration(int days, int hours, int minutes)
+	{
+		duration.setDuration(days, hours, minutes);
+		calculateFinishTime();
+	}
 	
 	//
 	// Start Time
