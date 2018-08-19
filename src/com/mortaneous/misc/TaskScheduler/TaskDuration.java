@@ -7,9 +7,9 @@ import java.time.Duration;
  
 public class TaskDuration
 {
-	private int days;
-	private int hours;
-	private int minutes;
+//	private int days;
+//	private int hours;
+//	private int minutes;
 	private Duration duration;
 	private String textDuration;
 	
