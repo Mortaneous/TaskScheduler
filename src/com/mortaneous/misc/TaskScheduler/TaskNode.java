@@ -40,7 +40,7 @@ public class TaskNode extends Observable implements Task, Observer
 	
 	public TaskNode(String title, String description,
 				int days, int hours, int minutes, 											// duration
-				List<TaskNode> parents															// dependencies
+				List<TaskNode> parents														// dependencies
 			   )
 	{
 		initialize(title, description, days, hours, minutes);
@@ -53,15 +53,12 @@ public class TaskNode extends Observable implements Task, Observer
 	}
 	
 	public TaskNode(String title, String description,
-				int year, int month, int dayOfMonth, int hourOfDay, int minuteOfHour,		// start date/time
-				int days, int hours, int minutes 											// duration
+				int days, int hours, int minutes, 											// duration
+				int year, int month, int dayOfMonth, int hourOfDay, int minuteOfHour		// start date/time
 			   )
 	{
-		this.title = title;
-		this.description = description;
-
-		duration = new TaskDuration(days, hours, minutes);
-		parents = new ArrayList<TaskNode>();
+		initialize(title, description, days, hours, minutes);
+		
 		setStartTime(new GregorianCalendar(year, month, dayOfMonth, hourOfDay, minuteOfHour));
 	}
 
@@ -79,7 +76,7 @@ public class TaskNode extends Observable implements Task, Observer
 		this.startTime = null;
 		this.finishTime = null;
 		
-		this.duration = new TaskDuration(days, hours, minutes);
+		duration = new TaskDuration(days, hours, minutes);
 	
 		parents = new ArrayList<TaskNode>();
 	}

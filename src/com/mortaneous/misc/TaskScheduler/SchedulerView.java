@@ -5,9 +5,13 @@
 package com.mortaneous.misc.TaskScheduler;
 
 import javax.swing.*;
+
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+
+import java.util.List;
+import java.util.ArrayList;
 
 public class SchedulerView extends JFrame implements ActionListener
 {
@@ -19,6 +23,7 @@ public class SchedulerView extends JFrame implements ActionListener
 	private String appName;
 	
 	private TaskPanel panel;
+	private JScrollPane view;
 	
 	private JMenuBar menuBar;
 	
@@ -35,7 +40,10 @@ public class SchedulerView extends JFrame implements ActionListener
 	private boolean test2Active;
 	private TaskNode task1;
 	private TaskNode task2;
+	private TaskNode task3;
 	//--------- DEBUG -----------//
+	
+	private List<Task> tasks;
 	
 	public SchedulerView(String appName)
 	{
@@ -46,6 +54,8 @@ public class SchedulerView extends JFrame implements ActionListener
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		
 		initializeControls();
+		
+		tasks = new ArrayList<Task>();
 	}
 	
 	public void initializeControls()
@@ -92,25 +102,27 @@ public class SchedulerView extends JFrame implements ActionListener
 		test2MI.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_2, ActionEvent.ALT_MASK));
 		test2MI.addActionListener(this);
 		
-		taskMenu.add(new JSeparator());
+		taskMenu.addSeparator();
 		taskMenu.add(test1MI);
 		taskMenu.add(test2MI);
 		
 		test1Active = false;
 		test2Active = false;
 		
-		// taskView1 = new TaskElement(null, 350, 10, 50, 50, Color.RED);
-		// taskView2 = new TaskElement(null, 100, 160);
-		task1 = new TaskNode("[1] DESIGN", "Requirements gathering", 2018, 8, 13, 14, 46, 5, 0, 0);
+		task1 = new TaskNode("[1] DESIGN", "Requirements gathering", 5, 0, 0, 2018, 8, 13, 14, 46);
 		task2 = new TaskNode("[2] CODING", "Coding and testing", 10, 0, 0, task1);
+		task3 = new TaskNode("[3] TESTING", "QA testing", 10, 0, 0, task2);
 		//--------- DEBUG -----------//
 		
 		//
 		// Content Pane
 		//
-		add(panel = new TaskPanel());
+		panel = new TaskPanel();
+		view = new JScrollPane(panel);
+		setContentPane(view);
+		//add(view);
 		
-		pack();
+		//pack();
 	}
 	
 	public void launch()
@@ -124,8 +136,30 @@ public class SchedulerView extends JFrame implements ActionListener
 		if(event.getSource() == fileExitMI) {
 			System.exit(0);
 		}
+		else if(event.getSource() == taskNewMI) {
+			TaskDlg dlg = new TaskDlgImpl(this);
+			dlg.open();
+			//System.out.println("Add new task? " + (dlg.isDataAccepted() ? "Yes" : "No"));
+			if(dlg.isDataAccepted()) {
+				Task task = new TaskNode(dlg.getTitle(), dlg.getDescription(),
+										dlg.getDurationDays(), dlg.getDurationHours(), dlg.getDurationMinutes(),
+										dlg.getStartYear(), dlg.getStartMonth(), dlg.getStartDay(), dlg.getStartHour(), dlg.getStartMinute());
+				tasks.add(task);
+				panel.addTask(task);
+				
+				//pack();
+				view.setViewportView(panel);
+			}
+		}
 		//--------- DEBUG -----------//
 		else if(event.getSource() == test1MI) {
+			// tasks.add(task1);
+			// panel.addTask(task1);
+			// tasks.add(task2);
+			// panel.addTask(task2);
+			// tasks.add(task3);
+			// panel.addTask(task3);
+
 			if(test1Active) {
 				panel.removeTask(task1);
 			}
@@ -135,6 +169,8 @@ public class SchedulerView extends JFrame implements ActionListener
 			test1Active = !test1Active;
 		}
 		else if(event.getSource() == test2MI) {
+			//panel.removeTask(tasks.remove(1));
+			
 			if(test2Active) {
 				panel.removeTask(task2);
 			}

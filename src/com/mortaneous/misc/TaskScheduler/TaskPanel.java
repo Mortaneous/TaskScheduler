@@ -6,11 +6,11 @@ package com.mortaneous.misc.TaskScheduler;
 
 import javax.swing.*;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics;
 
-import java.util.Map;
-import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Calendar;
 
 public class TaskPanel extends JPanel
@@ -19,19 +19,21 @@ public class TaskPanel extends JPanel
 	 * 
 	 */
 	private static final long serialVersionUID = -2227009623107193498L;
-	private Map<Task, TaskView> taskMap;
-
+	//private Map<Task, TaskView> taskMap;
+	private List<TaskView> taskList;
+	
 	public TaskPanel()
 	{
-		setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		//setBorder(BorderFactory.createLineBorder(Color.BLACK));
 		
-		taskMap = new HashMap<Task, TaskView>();
+		//taskMap = new HashMap<Task, TaskView>();
+		taskList = new ArrayList<TaskView>();
 	}
 	
-	public Dimension getPreferredSize()
-	{
-		return new Dimension(640,480);
-	}
+	// public Dimension getPreferredSize()
+	// {
+		// return new Dimension(640,480);
+	// }
 	
 	public void paintComponent(Graphics g)
 	{
@@ -44,11 +46,20 @@ public class TaskPanel extends JPanel
 	{
 		if(task != null) {
 			int OFFSET = 1;
-			TaskElement te = new TaskElement(task);
-			te.setPosition(150, getNextAvailLoc(taskMap.size()));
-			//System.out.println(te.getTitle() + " : " + te.getX() + "," + te.getY());
-			taskMap.put(task, te);
-			repaint(te.getX(), te.getY(), te.getWidth()+OFFSET, te.getHeight()+OFFSET);
+			int MARGIN = 10;
+
+			TaskView tv = new TaskElement(task);
+			tv.setPosition(MARGIN, getNextAvailLoc(taskList.size()));
+			taskList.add(tv);
+			
+			repaint(tv.getX(), tv.getY(), tv.getWidth()+OFFSET, tv.getHeight()+OFFSET);
+			
+			int newWidth = tv.getX() + tv.getWidth() + OFFSET + MARGIN;
+			int newHeight = tv.getY() + tv.getHeight() + OFFSET + MARGIN;
+			setSize(newWidth, newHeight);
+			invalidate();
+			
+			System.out.println("Panel size = " + newWidth + " x " + newHeight);
 		}
 	}
 	
@@ -56,20 +67,43 @@ public class TaskPanel extends JPanel
 	{
 		if(task != null) {
 			int OFFSET = 1;
-			TaskView tv = taskMap.get(task);
-			taskMap.remove(task);
-			repaint(tv.getX(), tv.getY(), tv.getWidth()+OFFSET, tv.getHeight()+OFFSET);
+
+			Iterator<TaskView> it = taskList.iterator();
+			TaskView deleted;
+			TaskView node;
+			
+			while(it.hasNext()) {
+				deleted = it.next();
+
+				if(deleted.getTask() == task) {
+					it.remove();
+					repaint(deleted.getX(), deleted.getY(), deleted.getWidth()+OFFSET, deleted.getHeight()+OFFSET);
+
+					while(it.hasNext()) {
+						node = it.next();
+						swapPositions(deleted, node);
+						
+						repaint(deleted.getX(), deleted.getY(), deleted.getWidth()+OFFSET, deleted.getHeight()+OFFSET);
+					}
+
+				}
+			}
+
 		}
 	}
 	
-	private void drawModifiedTasks(Graphics g)
+	private void swapPositions(TaskView t1, TaskView t2)
 	{
+		int x = t1.getX();
+		int y = t1.getY();
 		
+		t1.setPosition(t2.getX(), t2.getY());
+		t2.setPosition(x, y);
 	}
 	
 	private void drawAllTasks(Graphics g)
 	{
-		for(TaskView task : taskMap.values()) {
+		for(TaskView task : taskList) {
 			drawTask(g, task);
 		}
 	}
@@ -109,9 +143,8 @@ public class TaskPanel extends JPanel
 	
 	public String getDisplayString(Calendar cal)
 	{
-	return (cal.get(Calendar.MONTH)+1) + "/" + cal.get(Calendar.DAY_OF_MONTH) + "/" + cal.get(Calendar.YEAR) + " " +
+		return (cal.get(Calendar.MONTH)+1) + "/" + cal.get(Calendar.DAY_OF_MONTH) + "/" + cal.get(Calendar.YEAR) + " " +
 		   cal.get(Calendar.HOUR_OF_DAY) + ":" + cal.get(Calendar.MINUTE);
-
 	}
 	
 	public void updateView(Graphics g)
@@ -131,7 +164,7 @@ public class TaskPanel extends JPanel
 		final int startPos = 10;
 		final int spacer = 10;
 		int nextPos = startPos + index * TaskElement.DEF_HEIGHT + index * spacer;
-		//System.out.println("nextPos = " + nextPos);
+
 		return nextPos;
 	}
 }

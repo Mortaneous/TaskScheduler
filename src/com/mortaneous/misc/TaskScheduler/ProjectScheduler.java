@@ -8,8 +8,7 @@ import javax.swing.SwingUtilities;
 
 public class ProjectScheduler
 {
-	private static final String APP_NAME = "Task Scheduler"; 
-	private String appName;
+	private static final String APP_NAME = "Project Scheduler"; 
 	
 	private SchedulerView view;
 	

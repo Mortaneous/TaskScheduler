@@ -66,12 +66,15 @@ public class TaskElement implements TaskView
 	
 	@Override
 	public int getX() { return x; }
+	@Override
 	public void setX(int x) { this.x = x; }
 	
 	@Override
 	public int getY() { return y; }
+	@Override
 	public void setY(int y) { this.y = y; }
 	
+	@Override
 	public void setPosition(int x, int y)
 	{
 		setX(x);
@@ -101,4 +104,7 @@ public class TaskElement implements TaskView
 
 	@Override
 	public Calendar getFinishTime() { return task != null ? task.getFinishTime() : null; }
+	
+	@Override
+	public Task getTask() { return task; }
 }
