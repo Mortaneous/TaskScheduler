@@ -13,7 +13,7 @@ import java.awt.event.KeyEvent;
 import java.util.List;
 import java.util.ArrayList;
 
-public class SchedulerView extends JFrame implements ActionListener
+public class SchedulerView extends JFrame implements ActionListener, ITaskUpdateListener
 {
 	/**
 	 * 
@@ -36,8 +36,10 @@ public class SchedulerView extends JFrame implements ActionListener
 	//--------- DEBUG -----------//
 	private JMenuItem test1MI;
 	private JMenuItem test2MI;
+	private JMenuItem test3MI;
 	private boolean test1Active;
 	private boolean test2Active;
+	private boolean test3Active;
 	private TaskNode task1;
 	private TaskNode task2;
 	private TaskNode task3;
@@ -56,6 +58,8 @@ public class SchedulerView extends JFrame implements ActionListener
 		initializeControls();
 		
 		tasks = new ArrayList<Task>();
+		
+		//addMouseListener(this);
 	}
 	
 	public void initializeControls()
@@ -94,30 +98,37 @@ public class SchedulerView extends JFrame implements ActionListener
 		setJMenuBar(menuBar);
 		
 		//--------- DEBUG -----------//
-		test1MI = new JMenuItem("Test 1", KeyEvent.VK_1);
+		test1MI = new JMenuItem("Test 1 - Design task", KeyEvent.VK_1);
 		test1MI.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_1, ActionEvent.ALT_MASK));
 		test1MI.addActionListener(this);
 		
-		test2MI = new JMenuItem("Test 2", KeyEvent.VK_2);
+		test2MI = new JMenuItem("Test 2 - Dev task", KeyEvent.VK_2);
 		test2MI.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_2, ActionEvent.ALT_MASK));
 		test2MI.addActionListener(this);
+		
+		test3MI = new JMenuItem("Test 3 - QA task", KeyEvent.VK_3);
+		test3MI.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_3, ActionEvent.ALT_MASK));
+		test3MI.addActionListener(this);
 		
 		taskMenu.addSeparator();
 		taskMenu.add(test1MI);
 		taskMenu.add(test2MI);
+		taskMenu.add(test3MI);
 		
 		test1Active = false;
 		test2Active = false;
+		test3Active = false;
 		
-		task1 = new TaskNode("[1] DESIGN", "Requirements gathering", 5, 0, 0, 2018, 8, 13, 14, 46);
+		task1 = new TaskNode("[1] DESIGN", "Requirements gathering", 5, 0, 0, 2018, 9, 13, 14, 46);
 		task2 = new TaskNode("[2] CODING", "Coding and testing", 10, 0, 0, task1);
-		task3 = new TaskNode("[3] TESTING", "QA testing", 10, 0, 0, task2);
+		task3 = new TaskNode("[3] TESTING", "QA testing", 15, 0, 0, task1);
+		task3.addDependency(task2);
 		//--------- DEBUG -----------//
 		
 		//
 		// Content Pane
 		//
-		panel = new TaskPanel();
+		panel = new TaskPanel(this);
 		view = new JScrollPane(panel);
 		setContentPane(view);
 		//add(view);
@@ -129,7 +140,22 @@ public class SchedulerView extends JFrame implements ActionListener
 	{
 		setVisible(true);
 	}
+
+	private void addTask(Task task)
+	{
+		tasks.add(task);
+		panel.addTask(task);
+	}
 	
+	private void removeTask(Task task)
+	{
+		tasks.remove(task);
+		panel.removeTask(task);
+	}
+	
+	//
+	// ActionListener interface
+	//
 	@Override
 	public void actionPerformed(ActionEvent event)
 	{
@@ -137,48 +163,79 @@ public class SchedulerView extends JFrame implements ActionListener
 			System.exit(0);
 		}
 		else if(event.getSource() == taskNewMI) {
-			TaskDlg dlg = new TaskDlgImpl(this);
+			TaskDlg dlg = new TaskDlgImpl(this, true);
 			dlg.open();
-			//System.out.println("Add new task? " + (dlg.isDataAccepted() ? "Yes" : "No"));
 			if(dlg.isDataAccepted()) {
-				Task task = new TaskNode(dlg.getTitle(), dlg.getDescription(),
+				Task task = new TaskNode(dlg.getTaskTitle(), dlg.getDescription(),
 										dlg.getDurationDays(), dlg.getDurationHours(), dlg.getDurationMinutes(),
 										dlg.getStartYear(), dlg.getStartMonth(), dlg.getStartDay(), dlg.getStartHour(), dlg.getStartMinute());
-				tasks.add(task);
-				panel.addTask(task);
+				addTask(task);
 				
 				//pack();
-				view.setViewportView(panel);
+				//view.setViewportView(panel);
 			}
 		}
 		//--------- DEBUG -----------//
 		else if(event.getSource() == test1MI) {
-			// tasks.add(task1);
-			// panel.addTask(task1);
-			// tasks.add(task2);
-			// panel.addTask(task2);
-			// tasks.add(task3);
-			// panel.addTask(task3);
 
 			if(test1Active) {
-				panel.removeTask(task1);
+				removeTask(task1);
 			}
 			else {
-				panel.addTask(task1);
+				addTask(task1);
 			}
 			test1Active = !test1Active;
 		}
 		else if(event.getSource() == test2MI) {
-			//panel.removeTask(tasks.remove(1));
 			
 			if(test2Active) {
-				panel.removeTask(task2);
+				removeTask(task2);
 			}
 			else {
-				panel.addTask(task2);
+				addTask(task2);
 			}
 			test2Active = !test2Active;
 		}
+		else if(event.getSource() == test3MI) {
+
+			if(test3Active) {
+				removeTask(task3);
+			}
+			else {
+				addTask(task3);
+			}
+			test3Active = !test3Active;
+		}
 		//--------- DEBUG -----------//
+	}
+	
+	//
+	// ITaskUpdateListener interface
+	//
+	@Override
+	public void updateTask(Task task)
+	{
+		TaskDlg dlg = new TaskDlgImpl(this, false);
+
+		dlg.setTaskTitle(task.getTitle());
+		dlg.setDescription(task.getDescription());
+		dlg.setStartDateTime(task.getStartMonth(), task.getStartDay(), task.getStartYear(), task.getStartHour(), task.getStartMinute());
+		dlg.setDuration(task.getDurationDays(), task.getDurationHours(), task.getDurationMinutes());
+		dlg.setDependencies(task.getDependencies());
+
+		// System.out.println("Active Tasks: ");
+		// for(Task t : tasks) {
+			// System.out.println("  :" + t.getTitle());
+		// }
+		dlg.setActiveTasks(tasks);
+		
+		dlg.open();
+
+		if(dlg.isDataAccepted()) {
+			task.setTitle(dlg.getTaskTitle());
+			task.setDescription(dlg.getDescription());
+			task.setStartDateTime(dlg.getStartMonth(), dlg.getStartDay(), dlg.getStartYear(), dlg.getStartHour(), dlg.getStartMinute());
+			task.setDuration(dlg.getDurationDays(), dlg.getDurationHours(), dlg.getDurationMinutes());
+		}
 	}
 }

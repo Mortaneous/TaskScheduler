@@ -13,7 +13,13 @@ import java.awt.Container;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.ArrayList;
+
 import static javax.swing.LayoutStyle.ComponentPlacement;
+import static javax.swing.JOptionPane.showMessageDialog;
 
 public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 {
@@ -51,7 +57,10 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 	private JTextField durationMinutesField;
 	private JLabel durationMinutesLabel;
 	private JLabel prereqLabel;
-	private JList<String> prereqList;
+	private JList<Task> prereqList;
+	private DefaultListModel<Task> prereqListModel;
+	private JScrollPane prereqScroll;
+	private JLabel footNoteLabel;
 	private JButton addButton;
 	private JButton cancelButton;
 	
@@ -68,29 +77,40 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 	private int durationDays;
 	private int durationHours;
 	private int durationMinutes;
+	private List<Task> prereq;
+	private List<Task> activeTasks;
+	
 	private boolean dataAccepted;
+	private boolean isAdd;
 	
 	//
 	// Properties
 	//
 	@Override
-	public void setTitle(String title) { this.title = title; }
+	public void setTaskTitle(String title) 
+	{
+		titleField.setText(this.title = title);
+	}
 	@Override
-	public String getTitle() { return title; }
+	public String getTaskTitle() { return title; }
 	
 	@Override
-	public void setDescription(String description) { this.description = description; }
+	public void setDescription(String description) 
+	{
+		descField.setText(this.description = description);
+	}
 	@Override
 	public String getDescription() { return description; }
 	
 	@Override
 	public void setStartDateTime(int month, int day, int year, int hour, int minute)
 	{
-		startMonth = month;
-		startDay = day;
-		startYear = year;
-		startHour = hour;
-		startMinute = minute;
+		startMonthCombo.setSelectedItem(startMonth = month+1);
+		startDayCombo.setSelectedItem(startDay = day);
+		startYearCombo.setSelectedItem(startYear = year);
+		
+		startHourCombo.setSelectedItem(startHour = hour);
+		startMinuteCombo.setSelectedItem(startMinute = minute);
 	}
 	@Override
 	public int getStartMonth() { return startMonth; }
@@ -106,9 +126,13 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 	@Override
 	public void setDuration(int days, int hours, int minutes)
 	{
-		durationDays = days;
-		durationHours = hours;
-		durationMinutes = minutes;
+		Integer daysInt = (durationDays = days);
+		Integer hoursInt = (durationHours = hours);
+		Integer minutesInt = (durationHours = hours);
+		
+		durationDaysField.setText(daysInt.toString());
+		durationHoursField.setText(hoursInt.toString());
+		durationMinutesField.setText(minutesInt.toString());
 	}
 	@Override
 	public int getDurationDays() { return durationDays; }
@@ -118,6 +142,34 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 	public int getDurationMinutes() { return durationMinutes; }
 
 	@Override
+	public void setDependencies(List<Task> dependencies)
+	{
+		prereq.clear();
+		
+		prereq.addAll(dependencies);
+		
+		for(Task task : dependencies) {
+			prereqList.setSelectedValue(task, true);
+		}
+	}
+	@Override
+	public List<Task> getDependencies() { return prereq; }
+	
+	@Override
+	public void setActiveTasks(List<Task> activeTasks)
+	{
+		this.activeTasks.addAll(activeTasks);
+		
+		prereqListModel.clear();
+		
+		for(Task task : activeTasks) {
+			if(title != task.getTitle()) {
+				prereqListModel.addElement(task);
+			}
+		}
+	}
+	
+	@Override
 	public void open() { setVisible(true); }
 	
 	@Override
@@ -126,14 +178,17 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 	//
 	// Constructor
 	//
-	public TaskDlgImpl(Frame owner)
+	public TaskDlgImpl(Frame owner, boolean isAdd)
 	{
-		super(owner, "New Task", true);
+		super(owner, isAdd ? "New Task" : "Modify Task", true);
 		setSize(320, 200);
 		setLocationRelativeTo(owner);
 		setResizable(false);
+		this.isAdd = isAdd;
 		
 		dataAccepted = false;
+		prereq = new ArrayList<Task>();
+		activeTasks = new ArrayList<Task>();
 		
 		initializeControls();
 		createLayout();
@@ -142,7 +197,7 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 	private void initializeControls()
 	{
 		// Title
-		titleLabel = new JLabel("Title");
+		titleLabel = new JLabel("Title*");
 		titleField = new JTextField();
 		
 		// Description
@@ -150,7 +205,7 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 		descField = new JTextField();
 		
 		// Start Date/Time
-		startLabel = new JLabel("Start Date/Time");
+		startLabel = new JLabel("Start Date/Time*");
 		startMonthLabel = new JLabel("month");
 		startMonthCombo = new JComboBox<Integer>();
 		startDayLabel = new JLabel("day");
@@ -168,7 +223,7 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 		timeSeparator2 = new JLabel(":");
 		
 		// Duration
-		durationLabel = new JLabel("Duration");
+		durationLabel = new JLabel("Duration*");
 		durationDaysField = new JTextField();
 		durationDaysLabel = new JLabel("days");
 		durationHoursField = new JTextField();
@@ -177,10 +232,19 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 		durationMinutesLabel = new JLabel("minutes");
 
 		// Prerequisites
-		prereqLabel = new JLabel("Prerequisites");
+		prereqLabel = new JLabel("Prerequisite Tasks");
+		
+		// Foot note
+		footNoteLabel = new JLabel("* - required");
 		
 		// Buttons
-		addButton = new JButton("Add");
+		if(isAdd) {
+			addButton = new JButton("Add Task");
+		}
+		else {
+			addButton = new JButton("Accept");
+		}
+		
 		cancelButton = new JButton("Cancel");
 		
 		//
@@ -217,9 +281,13 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 		//
 		
 		// Prerequisites
-		String[] data = new String[] { "one", "two", "three", "four" };
-		prereqList = new JList<String>(data);
+		//String[] data = new String[] { "one", "two", "three", "four", "five", "six", "four", "five", "six" };
+		prereqListModel = new DefaultListModel<Task>();
+		prereqList = new JList<Task>();
+		prereqList.setModel(prereqListModel);
+		
 		prereqList.setFixedCellWidth(150);
+		prereqScroll = new JScrollPane(prereqList);
 		
 		//
 		// Listeners
@@ -244,6 +312,7 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 								.addComponent(startLabel)
 								.addComponent(durationLabel)
 								.addComponent(prereqLabel)
+								.addComponent(footNoteLabel)
 							)
 				  .addGap(20)
 				  .addGroup(layout.createParallelGroup()
@@ -271,7 +340,7 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 																.addComponent(startYearCombo)
 																.addComponent(startYearLabel)
 														 )
-												.addGap(10)
+												.addGap(20)
 												.addGroup(layout.createParallelGroup()
 																.addComponent(startHourCombo)
 																.addComponent(startHourLabel)
@@ -292,7 +361,8 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 												.addComponent(durationMinutesField).addGap(5)
 												.addComponent(durationMinutesLabel)
 										 )
-								.addComponent(prereqList)
+								// .addComponent(prereqList)
+								.addComponent(prereqScroll)
 							)
 				  .addGap(20)
 				  .addGroup(layout.createParallelGroup()
@@ -315,7 +385,7 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 								.addComponent(cancelButton)
 							)
 				 .addGap(10)
-				 .addGroup(layout.createParallelGroup(Alignment.BASELINE)
+				 .addGroup(layout.createParallelGroup(Alignment.CENTER)
 								.addComponent(startLabel)
 								.addGroup(layout.createSequentialGroup()
 												.addComponent(startMonthCombo)
@@ -342,7 +412,7 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 										 )
 							)
 				 .addGap(10)
-				 .addGroup(layout.createParallelGroup()
+				 .addGroup(layout.createParallelGroup(Alignment.BASELINE)
 								.addComponent(durationLabel)
 								.addComponent(durationDaysField)
 								.addComponent(durationDaysLabel)
@@ -354,9 +424,12 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 				 .addGap(10)
 				 .addGroup(layout.createParallelGroup()
 								.addComponent(prereqLabel)
-								.addComponent(prereqList)
+								// .addComponent(prereqList)
+								.addComponent(prereqScroll)
 						  )
-				 .addGap(10);
+				 .addPreferredGap(ComponentPlacement.UNRELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+				 //.addGap(10)
+				 .addComponent(footNoteLabel);
 		layout.setVerticalGroup(vertGroup);
 		
 		layout.linkSize(SwingConstants.HORIZONTAL, addButton, cancelButton);
@@ -374,28 +447,50 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 		Object source = event.getSource();
 		
 		if(source == addButton) {
-			saveData();
-			printData();
-			dataAccepted = true;
-			setVisible(false);
+			if(retrieveData()) {
+				dataAccepted = true;
+				setVisible(false);
+			}
 		}
 		else if(source == cancelButton) {
-			dataAccepted = false;
+			//dataAccepted = false;
 			setVisible(false);
 		}
 
 	}
 	
-	private void saveData()
+	private boolean retrieveData()
 	{
-		title = titleField.getText();
-		description = descField.getText();
+
+		String title;
+		int startMonth, startDay, startYear, startHour, startMinute;
+		int durationDays, durationHours, durationMinutes;
 		
+		
+		//
+		// Process required fields first
+		//
+		
+		// Title
+		title = titleField.getText();
+		if(title.isEmpty()) { 
+			showMessageDialog(this, "Task [Title] required", "Invalid Entry", JOptionPane.ERROR_MESSAGE);
+			return false; 
+		}
+		
+		// Start Date/Time
 		startMonth = ((int) startMonthCombo.getSelectedItem()) - 1;  // making months value zero-based
 		startDay = (int) startDayCombo.getSelectedItem();
 		startYear = (int) startYearCombo.getSelectedItem();
 		startHour = (int) startHourCombo.getSelectedItem();
 		startMinute = (int) startMinuteCombo.getSelectedItem();
+
+		Calendar now = Calendar.getInstance();
+		Calendar input = new GregorianCalendar(startYear, startMonth, startDay, startHour, startMinute);
+		if(input.before(now)) {
+			showMessageDialog(this, "Valid [Start Date/Time] required", "Invalid Entry", JOptionPane.ERROR_MESSAGE);
+			return false;
+		}
 		
 		String text = durationDaysField.getText();
 		durationDays = text.isEmpty() ? 0 : Integer.parseInt(text);
@@ -403,6 +498,28 @@ public class TaskDlgImpl extends JDialog implements TaskDlg, ActionListener
 		durationHours = text.isEmpty() ? 0 : Integer.parseInt(text);
 		text = durationMinutesField.getText();
 		durationMinutes = text.isEmpty() ? 0 : Integer.parseInt(text);
+		if(durationDays+durationHours+durationMinutes == 0) {
+			showMessageDialog(this, "Task [Duration] required", "Invalid Entry", JOptionPane.ERROR_MESSAGE);
+			return false;
+		}
+
+		this.title = title;
+		this.description = descField.getText();
+		this.startMonth = startMonth;
+		this.startDay = startDay;
+		this.startYear = startYear;
+		this.startHour = startHour;
+		this.startMinute = startMinute;
+		this.durationDays = durationDays;
+		this.durationHours = durationHours;
+		this.durationMinutes = durationMinutes;
+		
+		return true;
+	}
+	
+	private void saveData()
+	{
+		
 	}
 	
 	private void printData()

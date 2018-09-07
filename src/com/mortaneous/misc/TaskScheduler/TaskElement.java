@@ -7,6 +7,8 @@ package com.mortaneous.misc.TaskScheduler;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.util.Calendar;
+import java.util.Observable;
+import java.util.Observer;
 
 public class TaskElement implements TaskView
 {
@@ -55,7 +57,11 @@ public class TaskElement implements TaskView
 		this.height = height;
 		this.color = color;
 		
-		this.dirty = true;
+		// if(task instanceof TaskNode) {
+			// ((TaskNode) task).registerObserver(this);
+		// }
+		
+		this.dirty = false;
 	}
 	
 	@Override
@@ -92,6 +98,8 @@ public class TaskElement implements TaskView
 
 	@Override
 	public Color getColor() { return color; }
+	@Override
+	public void setColor(Color color) { this.color = color; }
 
 	@Override
 	public String getTitle() { return task != null ? task.getTitle() : ""; }
@@ -107,4 +115,13 @@ public class TaskElement implements TaskView
 	
 	@Override
 	public Task getTask() { return task; }
+	
+	//
+	// Observer interface
+	//
+	// @Override
+	// public void update(Observable o, Object args)
+	// {
+		// dirty = true;
+	// }
 }

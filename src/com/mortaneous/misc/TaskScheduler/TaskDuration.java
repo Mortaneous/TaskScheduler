@@ -10,6 +10,9 @@ public class TaskDuration
 {
 	private Duration duration;
 	private String textDuration;
+	private int days;
+	private int hours;
+	private int minutes;
 	
 	public TaskDuration()
 	{
@@ -42,7 +45,10 @@ public class TaskDuration
 			dur += minutes + "M";
 		}
 		
-		duration = Duration.parse(textDuration = dur);	
+		duration = Duration.parse(textDuration = dur);
+		this.days = days;
+		this.hours = hours;
+		this.minutes = minutes;
 	}
 	
 	public String getTextDuration()
@@ -64,7 +70,22 @@ public class TaskDuration
 	{
 		return duration.toMinutes();
 	}
-  
+	
+	public int getNumOfDays()
+	{
+		return days;
+	}
+	
+	public int getNumOfHours()
+	{
+		return hours;
+	}
+	
+	public int getNumOfMinutes()
+	{
+		return minutes;
+	}
+	
   	public String toString()
     {
       return duration.toString();

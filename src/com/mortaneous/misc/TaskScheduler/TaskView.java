@@ -22,7 +22,8 @@ public interface TaskView
 	public int getHeight();
 	public Dimension getDimension();
 	public Color getColor();
-
+	public void setColor(Color color);
+	
 	public String getTitle();
 	public String getDescription();
 	public Calendar getStartTime();

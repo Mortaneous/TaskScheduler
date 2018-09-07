@@ -7,27 +7,35 @@ package com.mortaneous.misc.TaskScheduler;
 import javax.swing.*;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Rectangle;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseEvent;
 
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Calendar;
 
-public class TaskPanel extends JPanel
+public class TaskPanel extends JPanel implements MouseListener
 {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -2227009623107193498L;
-	//private Map<Task, TaskView> taskMap;
+	
+	private static final int OFFSET = 1;
+	private static final Color HIGHLIGHT_EDIT = Color.GREEN;
+	private static final Color HIGHLIGHT_DEPEND = Color.YELLOW;
+
+	private ITaskUpdateListener taskUpdateListener;
 	private List<TaskView> taskList;
 	
-	public TaskPanel()
+	public TaskPanel(ITaskUpdateListener listener)
 	{
-		//setBorder(BorderFactory.createLineBorder(Color.BLACK));
-		
-		//taskMap = new HashMap<Task, TaskView>();
+		taskUpdateListener = listener;
 		taskList = new ArrayList<TaskView>();
+
+		addMouseListener(this);
 	}
 	
 	// public Dimension getPreferredSize()
@@ -45,28 +53,23 @@ public class TaskPanel extends JPanel
 	public void addTask(Task task)
 	{
 		if(task != null) {
-			int OFFSET = 1;
 			int MARGIN = 10;
 
 			TaskView tv = new TaskElement(task);
 			tv.setPosition(MARGIN, getNextAvailLoc(taskList.size()));
 			taskList.add(tv);
 			
-			repaint(tv.getX(), tv.getY(), tv.getWidth()+OFFSET, tv.getHeight()+OFFSET);
+			//repaint(tv.getX(), tv.getY(), tv.getWidth()+OFFSET, tv.getHeight()+OFFSET);
+			invalidateTask(tv);
 			
 			int newWidth = tv.getX() + tv.getWidth() + OFFSET + MARGIN;
 			int newHeight = tv.getY() + tv.getHeight() + OFFSET + MARGIN;
-			setSize(newWidth, newHeight);
-			invalidate();
-			
-			System.out.println("Panel size = " + newWidth + " x " + newHeight);
 		}
 	}
 	
 	public void removeTask(Task task)
 	{
 		if(task != null) {
-			int OFFSET = 1;
 
 			Iterator<TaskView> it = taskList.iterator();
 			TaskView deleted;
@@ -77,13 +80,15 @@ public class TaskPanel extends JPanel
 
 				if(deleted.getTask() == task) {
 					it.remove();
-					repaint(deleted.getX(), deleted.getY(), deleted.getWidth()+OFFSET, deleted.getHeight()+OFFSET);
+					//repaint(deleted.getX(), deleted.getY(), deleted.getWidth()+OFFSET, deleted.getHeight()+OFFSET);
+					invalidateTask(deleted);
 
 					while(it.hasNext()) {
 						node = it.next();
 						swapPositions(deleted, node);
 						
-						repaint(deleted.getX(), deleted.getY(), deleted.getWidth()+OFFSET, deleted.getHeight()+OFFSET);
+						//repaint(deleted.getX(), deleted.getY(), deleted.getWidth()+OFFSET, deleted.getHeight()+OFFSET);
+						invalidateTask(deleted);
 					}
 
 				}
@@ -167,4 +172,86 @@ public class TaskPanel extends JPanel
 
 		return nextPos;
 	}
+	
+	private boolean isPtInRect(int x, int y, Rectangle rect)
+	{
+		// System.out.print("(" + rect.getX() + "," + rect.getY() + ")-(" + (rect.getX()+rect.getWidth()-1) + "," + (rect.getY()+rect.getHeight()-1) + ")" +
+						// " <--- X=" + x + ", Y=" + y + 
+						// " :: ");
+		return (x >= rect.getX() && x < rect.getX() + rect.getWidth()) &&
+			   (y >= rect.getY() && y < rect.getY() + rect.getHeight());
+	}
+
+	private void highlightTask(TaskView tv)
+	{
+		highlightTask(tv, null);
+	}
+	
+	private void highlightTask(TaskView tv, Color highlight)
+	{
+		
+		if(highlight != null) {
+			tv.setColor(highlight);
+		}
+		else {
+			tv.setColor(TaskElement.DEF_COLOR);
+		}
+		invalidateTask(tv);
+	}
+	
+	private void invalidateTask(TaskView tv)
+	{
+		repaint(tv.getX(), tv.getY(), tv.getWidth()+OFFSET, tv.getHeight()+OFFSET);
+	}
+	
+	//
+	// MouseListener interface
+	//
+	@Override
+	public void mouseClicked(MouseEvent event)
+	{
+		if(event.getButton() == MouseEvent.BUTTON1 && event.getClickCount() == 2) {
+
+			for(TaskView tv : taskList) {
+				if(isPtInRect(event.getX(), event.getY(), new Rectangle(tv.getX(), tv.getY(), tv.getWidth(), tv.getHeight()))) {
+					highlightTask(tv, HIGHLIGHT_EDIT);
+					taskUpdateListener.updateTask(tv.getTask());
+					highlightTask(tv);
+					break;
+				}
+			}
+			
+		}
+		else if(event.getButton() == MouseEvent.BUTTON3 && event.getClickCount() == 1) {
+			for(TaskView tv : taskList) {
+				if(isPtInRect(event.getX(), event.getY(), new Rectangle(tv.getX(), tv.getY(), tv.getWidth(), tv.getHeight()))) {
+					StringBuffer sb = new StringBuffer();
+					List<Task> parents = tv.getTask().getDependencies();
+					
+					if(parents.size() > 0) {
+						for(Task task : parents) {
+							sb.append(task.getTitle() + "\n");
+						}
+					}
+					else {
+						sb.append("[No dependencies]");
+					}
+					highlightTask(tv, HIGHLIGHT_DEPEND);
+					JOptionPane.showMessageDialog(this, sb.toString(), "Task Dependencies", JOptionPane.INFORMATION_MESSAGE);
+					highlightTask(tv);
+					break;
+				}
+			}
+		}
+	}
+	
+	@Override
+	public void mouseEntered(MouseEvent event) {};
+	@Override
+	public void mouseExited(MouseEvent event) {};
+	
+	@Override
+	public void mousePressed(MouseEvent event) {};
+	@Override
+	public void mouseReleased(MouseEvent event) {};
 }

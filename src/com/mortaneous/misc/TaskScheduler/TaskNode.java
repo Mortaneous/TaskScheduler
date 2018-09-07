@@ -111,7 +111,12 @@ public class TaskNode extends Observable implements Task, Observer
 	//
 	// Duration
 	//
-	
+	@Override
+	public int getDurationDays() { return duration.getNumOfDays(); }
+	@Override
+	public int getDurationHours() { return duration.getNumOfHours(); }
+	@Override
+	public int getDurationMinutes() { return duration.getNumOfMinutes(); }
 	@Override
 	public void setDuration(int days, int hours, int minutes)
 	{
@@ -123,12 +128,27 @@ public class TaskNode extends Observable implements Task, Observer
 	// Start Time
 	//
 	@Override
+	public int getStartMonth() { return startTime.get(Calendar.MONTH); }
+	@Override
+	public int getStartDay() { return startTime.get(Calendar.DAY_OF_MONTH); }
+	@Override
+	public int getStartYear() { return startTime.get(Calendar.YEAR); }
+	@Override
+	public int getStartHour() { return startTime.get(Calendar.HOUR_OF_DAY); }
+	@Override
+	public int getStartMinute() { return startTime.get(Calendar.MINUTE); }
+	@Override
 	public Calendar getStartTime()
 	{
 		return startTime;
 	}
 	
 	@Override
+	public void setStartDateTime(int month, int day, int year, int hour, int minute)
+	{
+		setStartTime(new GregorianCalendar(year, month, day, hour, minute));
+	}
+	
 	public void setStartTime(Calendar startTime)
 	{
 		if(parents.isEmpty()) {
@@ -177,13 +197,30 @@ public class TaskNode extends Observable implements Task, Observer
 	//
 	// Dependencies
 	//
+	@Override
+	public List<Task> getDependencies()
+	{
+		List<Task> dependencies = new ArrayList<Task>(parents);
+		
+		return dependencies;
+	}
+	
 	public void addDependency(TaskNode parent)
 	{
 		if(parent != null) {
 			parents.add(parent);
-			updateStartTime(parent);
+			updateStartTime((TaskNode)parent);
 			parent.registerObserver(this);
 		}
+	}
+	
+	//
+	// toString()
+	//
+	@Override
+	public String toString()
+	{
+		return getTitle();
 	}
 
 	//
