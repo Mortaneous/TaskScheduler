@@ -119,7 +119,7 @@ public class SchedulerView extends JFrame implements ActionListener, ITaskUpdate
 		test2Active = false;
 		test3Active = false;
 		
-		task1 = new TaskNode("[1] DESIGN", "Requirements gathering", 5, 0, 0, 2018, 9, 13, 14, 46);
+		task1 = new TaskNode("[1] DESIGN", "Requirements gathering", 5, 0, 0, 2019, 9, 13, 14, 46);
 		task2 = new TaskNode("[2] CODING", "Coding and testing", 10, 0, 0, task1);
 		task3 = new TaskNode("[3] TESTING", "QA testing", 15, 0, 0, task1);
 		task3.addDependency(task2);
